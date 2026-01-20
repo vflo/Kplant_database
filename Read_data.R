@@ -19,12 +19,12 @@
 #'   - R packages: readxl, dplyr, purrr, ggplot2, tidyr, readr
 #'   - External script: species_names_check.R (must be run first to generate
 #'     species_names_clean.csv)
-#'   - Input: Excel files with "data" sheets located in DATA/ folder
+#'   - Input: Excel files with "data" sheets located in data/ folder
 #' 
 #' Output: Kplant_0.0.4.csv
 #' 
 #' Usage:
-#'   1. Ensure DATA/ folder contains source Excel files
+#'   1. Ensure data/ folder contains source Excel files
 #'   2. Run species_names_check.R to generate species_names_clean.csv
 #'   3. Run this script
 #' =============================================================================
@@ -199,7 +199,7 @@ combine_data_sheets <- function(data_folder = "DATA") {
 
 
 #### Extract and combine into one data frame ####
-combined_data <- combine_data_sheets("DATA")
+combined_data <- combine_data_sheets("data")
 
 
 
@@ -272,7 +272,10 @@ pubescens" ~ "Poaceae",
 
 #### Relabel columns ####
 data <- data |> 
-  rename(K_original = Kwp,
+  rename(pl_age_mean = pl_age,
+         pl_height_mean = pl_height,
+         st_LAI = pl_LAI,
+         K_original = Kwp,
          K_original_standard_error = Standard_error_Kwp,
          K_original_units = Kwp_original_units,
          Kleaf = Kwp_cor_Leaf,
@@ -296,11 +299,11 @@ data <- data |>
     across(c(si_lat, si_long, si_altitude), as.numeric),
     
     # Numeric columns - plant traits
-    across(c(pl_age, pl_height, pl_basal_area, pl_DBH, pl_LAI, pl_LA, pl_SA, 
+    across(c(pl_age_mean, pl_height_mean, pl_basal_area, pl_DBH,  pl_LA, pl_SA, 
              pl_huber_value), as.numeric),
     
     # Numeric columns - stand and soil
-    across(c(st_basal_area, st_density, soil_sand_perc, soil_silt_perc, 
+    across(c(st_LAI, st_basal_area, st_density, soil_sand_perc, soil_silt_perc, 
              soil_clay_perc, soil_om_perc, soil_bulk_density, 
              volumetric_water_content), as.numeric),
     
@@ -322,4 +325,4 @@ data <- data |>
 
 
 #### Write database ####
-readr::write_csv(data, file = "Kplant_0.0.2.csv")
+readr::write_csv(data, file = "Kplant_0.0.4.csv")
