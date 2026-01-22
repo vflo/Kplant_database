@@ -9,9 +9,9 @@
 #' Contact: v.flo@creaf.uab.cat
 #' 
 #' Date created: 15/12/2025
-#' Last modified: 19/01/2026
+#' Last modified: 22/01/2026
 #' 
-#' Version: 0.0.3
+#' Version: 0.0.8
 #' 
 #' License: MIT
 #' 
@@ -21,7 +21,7 @@
 #'     species_names_clean.csv)
 #'   - Input: Excel files with "data" sheets located in data/ folder
 #' 
-#' Output: Kplant_0.0.4.csv
+#' Output: Kplant_0.0.8.csv
 #' 
 #' Usage:
 #'   1. Ensure data/ folder contains source Excel files
@@ -312,7 +312,7 @@ data <- data |>
              wp_leaf_midday_standard_error, wp_leaf_predawn_standard_error, 
              wp_soil_standard_error, deltaWP), as.numeric),
     
-    # Numeric columns - fluxes and conductances
+    # Numeric columns - fluxes and conductance
     across(c(WaterFlux, WaterFlux_standard_error, K_original, 
              K_original_standard_error, Kleaf, Ksapwood, Kplant, Kwood, 
              Kground), as.numeric),
@@ -321,8 +321,20 @@ data <- data |>
     across(c(gs, E, VPD, CO2, P50, Pmin, TLP, Gsmax, Ks), as.numeric)
   )
 
-
+#### Include pl_basal_area if not calculated from DBH ####
+data <- data |> 
+  mutate(pl_basal_area = case_when(is.na(pl_basal_area)&!is.na(pl_DBH)~pi*(pl_DBH/200)^2,
+                                   TRUE~pl_basal_area))
 
 
 #### Write database ####
-readr::write_csv(data, file = "Kplant_0.0.4.csv")
+readr::write_csv(data, file = "Kplant_0.0.8.csv")
+
+
+# data <- readr::read_csv(file = "Kplant_0.0.7.csv")
+# 
+# names(data)
+# data |> 
+#   select(pl_SA, pl_basal_area,file_path, IDref,pl_species_corrected,Contributor,PaperDOI) |>
+#   mutate(diff = pl_basal_area - pl_SA) |> 
+#   arrange(diff) |> print(n=60)
