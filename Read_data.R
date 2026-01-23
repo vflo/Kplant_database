@@ -37,6 +37,7 @@ library(dplyr)
 library(purrr)
 library(ggplot2)
 library(tidyr)
+library(stringr)
 
 #### Function to extract "data" sheet from Excel files ####
 extract_data_sheets <- function(data_folder = "data") {
@@ -233,6 +234,10 @@ Subvelutinum" ~ "Tachigali vulgaris",
 pubescens" ~ "Phyllostachys edulis",
       pl_species_original == "Quercus pubescens"  ~ "Quercus pubescens",
       pl_species_original == "Zea mays L" ~ "Zea mays",
+      pl_species_original == "maize" ~ "Zea mays",
+      pl_species_original == "Faba bean" ~ "Vicia faba",
+      pl_species_original == "Quercus" & IDref == 1235 ~ "Quercus suber",
+      pl_species_original == "Malus × domestica Borkh.)" ~ "Malus domestica",
       pl_species_original == "Tanacetum cinerariifolium (Trevir.) Sch. Bip" ~ "Tanacetum cinerariifolium",
       pl_species_original == "Callitris rhomboidea R. Br. ex A. Rich. & Rich" ~ "Callitris rhomboidea",
       pl_species_original == "Populus deltoides x nigra" & is.na(pl_species_corrected) ~ "Populus deltoides x nigra",
@@ -242,6 +247,11 @@ pubescens" ~ "Phyllostachys edulis",
     gbif_id = case_when(
       pl_species_original == "Acacia robusta" ~ 8166188,
       pl_species_original == "Quercus pubescens" ~ 2881283,
+      pl_species_original == "Zea mays L" ~ 5290052,
+      pl_species_original == "maize" ~ 5290052,
+      pl_species_original == "Faba bean" ~ 2974832,
+      pl_species_original == "Quercus" & IDref == 1235 ~ 2879411,
+      pl_species_original == "Malus × domestica Borkh.)" ~ 3001244,
       pl_species_original == "Tanacetum cinerariifolium (Trevir.) Sch. Bip" ~ 3118284,
       pl_species_original == "Callitris rhomboidea R. Br. ex A. Rich. & Rich" ~ 2684320,
       pl_species_original == "Citrus sinensis" ~ 8077391,
@@ -257,6 +267,11 @@ pubescens" ~ 5290168,
       pl_species_original == "Quercus pubescens" ~ "Fagaceae",
       pl_species_original == "Populus deltoides x nigra" ~ "Salicaceae",
       pl_species_original == "Tanacetum cinerariifolium (Trevir.) Sch. Bip" ~ "Asteraceae",
+      pl_species_original == "Zea mays L" ~ "Poaceae",
+      pl_species_original == "maize" ~ "Poaceae",
+      pl_species_original == "Faba bean" ~ "Fabaceae",
+      pl_species_original == "Quercus" & IDref == 1235 ~ "Fagaceae",
+      pl_species_original == "Malus × domestica Borkh.)" ~ "Rosaceae",
       pl_species_original == "Callitris rhomboidea R. Br. ex A. Rich. & Rich" ~ "Cupresaceae",
       pl_species_original == "Citrus sinensis" ~ "Rutaceae",
       pl_species_original == "Ribes uva-crispa" ~ "Grossulariaceae",
@@ -269,11 +284,22 @@ pubescens" ~ "Poaceae",
     )
   )
 
+# get genera
+data <- data |> 
+  mutate(
+    pl_genus = word(pl_species_corrected, 1),
+    .after = pl_species_corrected
+  )
 
 #### Relabel columns ####
 data <- data |> 
   rename(pl_age_mean = pl_age,
          pl_height_mean = pl_height,
+         pl_basal_area_mean = pl_basal_area,
+         pl_DBH_mean = pl_DBH,
+         pl_LA_mean = pl_LA,
+         pl_SA_mean = pl_SA,
+         pl_huber_value_mean = pl_huber_value,
          st_LAI = pl_LAI,
          K_original = Kwp,
          K_original_standard_error = Standard_error_Kwp,
@@ -299,8 +325,9 @@ data <- data |>
     across(c(si_lat, si_long, si_altitude), as.numeric),
     
     # Numeric columns - plant traits
-    across(c(pl_age_mean, pl_height_mean, pl_basal_area, pl_DBH,  pl_LA, pl_SA, 
-             pl_huber_value), as.numeric),
+    across(c(pl_age_mean, pl_height_mean, pl_basal_area_mean, pl_DBH_mean,  
+             pl_LA_mean, pl_SA_mean, 
+             pl_huber_value_mean), as.numeric),
     
     # Numeric columns - stand and soil
     across(c(st_LAI, st_basal_area, st_density, soil_sand_perc, soil_silt_perc, 
@@ -317,18 +344,50 @@ data <- data |>
              K_original_standard_error, Kleaf, Ksapwood, Kplant, Kwood, 
              Kground), as.numeric),
     
-    # Numeric columns - gas exchange and hydraulic traits
-    across(c(gs, E, VPD, CO2, P50, Pmin, TLP, Gsmax, Ks), as.numeric)
+    # Numeric columns - gas exchange
+    across(c(gs, E, VPD, CO2), as.numeric),
+    
+    # Numeric columns - hydraulic traits
+    across(c( P50, Pmin, TLP, Gsmax, Ks), as.factor)
   )
+
+normalise_yesno <- function(x) {
+  x <- as.character(x)                    # factor a character
+  x <- if_else(x == "NA", NA_character_, x)  # "NA" string a NA real
+  x <- tolower(x)                         # todo a minúsculas
+  return(x)
+}
+
+data <- data %>%
+  mutate(across(c(P50, Gsmax, Ks, TLP, Pmin), normalise_yesno))
 
 #### Include pl_basal_area if not calculated from DBH ####
 data <- data |> 
-  mutate(pl_basal_area = case_when(is.na(pl_basal_area)&!is.na(pl_DBH)~pi*(pl_DBH/200)^2,
-                                   TRUE~pl_basal_area))
+  mutate(pl_basal_area_mean = case_when(is.na(pl_basal_area_mean)&
+                                     !is.na(pl_DBH_mean)~pi*(pl_DBH_mean/200)^2,
+                                   TRUE~pl_basal_area_mean))
+
+
+
+#### Relabel variables ####
+
+data <- data |> 
+  mutate(pl_experimental_conditions = 
+           case_when(pl_experimental_conditions == "potted" ~ "potted outdoors",
+                     pl_experimental_conditions == "Orchard" ~ "plantation",
+                     pl_experimental_conditions == "Plantation, managed" ~ "plantation",
+                     pl_experimental_conditions == "Naturally regenerated, unmanaged" ~ "field",
+                     pl_experimental_conditions == "Naturally regenerated, managed" ~ "field",
+                     TRUE~pl_experimental_conditions),
+         Aggregation = case_when(Aggregation %in% c("tree", "Tree")~ "individual",
+                                 TRUE ~ Aggregation),
+         si_country = na_if(si_country, "NA"))
+  
+
 
 
 #### Write database ####
-readr::write_csv(data, file = "Kplant_0.0.8.csv")
+readr::write_csv(data, file = "Kplant_0.0.9.csv")
 
 
 # data <- readr::read_csv(file = "Kplant_0.0.7.csv")
@@ -338,3 +397,6 @@ readr::write_csv(data, file = "Kplant_0.0.8.csv")
 #   select(pl_SA, pl_basal_area,file_path, IDref,pl_species_corrected,Contributor,PaperDOI) |>
 #   mutate(diff = pl_basal_area - pl_SA) |> 
 #   arrange(diff) |> print(n=60)
+
+
+table(data$Ks)
