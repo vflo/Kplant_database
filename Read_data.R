@@ -11,7 +11,7 @@
 #' Date created: 15/12/2025
 #' Last modified: 22/01/2026
 #' 
-#' Version: 0.0.8
+#' Version: 0.0.10
 #' 
 #' License: MIT
 #' 
@@ -21,7 +21,7 @@
 #'     species_names_clean.csv)
 #'   - Input: Excel files with "data" sheets located in data/ folder
 #' 
-#' Output: Kplant_0.0.8.csv
+#' Output: Kplant_0.0.11.csv
 #' 
 #' Usage:
 #'   1. Ensure data/ folder contains source Excel files
@@ -242,6 +242,7 @@ pubescens" ~ "Phyllostachys edulis",
       pl_species_original == "Callitris rhomboidea R. Br. ex A. Rich. & Rich" ~ "Callitris rhomboidea",
       pl_species_original == "Populus deltoides x nigra" & is.na(pl_species_corrected) ~ "Populus deltoides x nigra",
       pl_species_original == "Ribes uva-crispa" & is.na(pl_species_corrected) ~ "Ribes uva-crispa",
+      pl_species_original == "Pinus nigra" & is.na(pl_species_corrected) ~ "Pinus nigra",
       TRUE ~ pl_species_corrected
     ),
     gbif_id = case_when(
@@ -256,6 +257,7 @@ pubescens" ~ "Phyllostachys edulis",
       pl_species_original == "Callitris rhomboidea R. Br. ex A. Rich. & Rich" ~ 2684320,
       pl_species_original == "Citrus sinensis" ~ 8077391,
       pl_species_original == "Ribes uva-crispa" ~ 2986185,
+      pl_species_original == "Pinus nigra" ~ 5284809,
       pl_species_original == "Sclerolobium paniculatum var.
 Subvelutinum" ~ 3932173,
       pl_species_original == "Phyllostachys
@@ -275,6 +277,7 @@ pubescens" ~ 5290168,
       pl_species_original == "Callitris rhomboidea R. Br. ex A. Rich. & Rich" ~ "Cupresaceae",
       pl_species_original == "Citrus sinensis" ~ "Rutaceae",
       pl_species_original == "Ribes uva-crispa" ~ "Grossulariaceae",
+      pl_species_original == "Pinus nigra" ~ "Pinaceae",
       pl_species_original == "Sclerolobium paniculatum var.
 Subvelutinum" ~ "Fabaceae",
       pl_species_original == "Phyllostachys
@@ -301,19 +304,21 @@ data <- data |>
          pl_SA_mean = pl_SA,
          pl_huber_value_mean = pl_huber_value,
          st_LAI = pl_LAI,
-         K_original = Kwp,
-         K_original_standard_error = Standard_error_Kwp,
-         K_original_units = Kwp_original_units,
-         Kleaf = Kwp_cor_Leaf,
-         Ksapwood = Kwp_cor_sapwood,
-         Kplant = Kwp_cor_plant,
-         Kwood = Kwp_cor_wood,
-         Kground = Kwp_cor_ground,
-         Kmethod = Kwp_method,
+         normalization_level = Level,
+         k_original = Kwp,
+         k_original_standard_error = Standard_error_Kwp,
+         k_original_units = Kwp_original_units,
+         k_plant_leaf = Kwp_cor_Leaf,
+         k_plant_sapwood = Kwp_cor_sapwood,
+         k_plant = Kwp_cor_plant,
+         k_plant_wood = Kwp_cor_wood,
+         k_plant_ground = Kwp_cor_ground,
+         k_method = Kwp_method,
          WaterFlux_standard_error = Standard_error_WaterFlux,
          wp_leaf_midday_standard_error = Standard_error_wp_leaf_midday,
          wp_leaf_predawn_standard_error = Standard_error_wp_leaf_predawn,
-         wp_soil_standard_error = Standard_error_wp_soil)
+         wp_soil_standard_error = Standard_error_wp_soil) |> 
+  select(-Included)
 
 #### Normalize data types ####
 data <- data |> 
@@ -340,9 +345,9 @@ data <- data |>
              wp_soil_standard_error, deltaWP), as.numeric),
     
     # Numeric columns - fluxes and conductance
-    across(c(WaterFlux, WaterFlux_standard_error, K_original, 
-             K_original_standard_error, Kleaf, Ksapwood, Kplant, Kwood, 
-             Kground), as.numeric),
+    across(c(WaterFlux, WaterFlux_standard_error, k_original, 
+             k_original_standard_error, k_plant_leaf, k_plant_sapwood, k_plant, k_plant_wood, 
+             k_plant_ground), as.numeric),
     
     # Numeric columns - gas exchange
     across(c(gs, E, VPD, CO2), as.numeric),
@@ -381,16 +386,75 @@ data <- data |>
                      TRUE~pl_experimental_conditions),
          Aggregation = case_when(Aggregation %in% c("tree", "Tree")~ "individual",
                                  TRUE ~ Aggregation),
-         si_country = na_if(si_country, "NA"))
+         si_country = na_if(si_country, "NA")) |> 
+  mutate(pl_growth_form = case_when(pl_growth_form == "T"~"tree",
+                                    pl_growth_form == "F"~"forb",
+                                    pl_growth_form == "G"~"graminoid",
+                                    pl_growth_form == "L"~"liana",
+                                    pl_growth_form == "S"~"shrubs",
+                                    pl_growth_form == "C"~"stem_succulent",))
   
+
+
+#### Correct contributor names ####
+data$Contributor |> unique()
+
+data <- data |>
+  mutate(
+    Contributor = trimws(Contributor),
+    Contributor = case_match(
+      Contributor,
+      c("AV") ~ "Aude Valade",
+      c("MARGAUX", "Margaux") ~ "Margaux Didion-Gency",
+      c("Schonbeck", "Schönbeck") ~ "Leonie Schönbeck",
+      c("Cochard", "COCHARD") ~ "Hervé Cochard",
+      c("Belén Acuña-Míguez", "Belen Acuña-Miguez") ~ "Belén Acuña-Míguez",
+      c("charlotte grossiord") ~ "Charlotte Grossiord",
+      c("Danielle  Creek") ~ "Danielle Creek",
+      c("José Alberto Ramírez Valiente", "Jose Alberto Ramirez-Valiente") ~ "José Alberto Ramírez-Valiente",
+      c("Veuillen Léa") ~ "Léa Veuillen",
+      c("Martius, Lion R.") ~ "Lion R. Martius",
+      c("Pablo Sanchez Martinez") ~ "Pablo Sanchez-Martinez",
+      c("Teresa Gimeno") ~ "Teresa E. Gimeno",
+      c("Herve Cochard") ~ "Hervé Cochard",
+      .default = Contributor
+    )
+  )
+
+names(data)
+
+
+
+#### Round data ####
+# Variables to round with round()
+data <- data |>
+  mutate(
+    across(c(gbif_id, N, si_altitude, st_density), \(x) round(x, 0)),
+    across(c(CO2, pl_DBH_mean, pl_height_mean, pl_age_mean,
+             soil_sand_perc, soil_silt_perc, soil_clay_perc,
+             soil_om_perc, soil_bulk_density), \(x) round(x, 1)),
+    across(c(si_lat, si_long, st_LAI, st_basal_area,
+             wp_leaf_midday, wp_leaf_predawn, wp_soil,
+             deltaWP, wp_soil_depth, VPD, E), \(x) round(x, 4)),
+    across(c(wp_leaf_midday_standard_error, wp_leaf_predawn_standard_error,
+             wp_soil_standard_error, gs, volumetric_water_content), \(x) round(x, 4)),
+    across(c(pl_LA_mean, pl_basal_area_mean), \(x) round(x, 4)),
+    # signif() for variables spanning orders of magnitude
+    across(c(WaterFlux, WaterFlux_standard_error,
+             k_original, k_original_standard_error,
+             pl_SA_mean, pl_huber_value_mean,
+             k_plant_leaf, k_plant_sapwood, k_plant, k_plant_wood, k_plant_ground), \(x) signif(x, 4))
+  )
 
 
 
 #### Write database ####
-readr::write_csv(data, file = "Kplant_0.0.9.csv")
+# readr::write_csv(data, file = "Kplant_0.0.10.csv")
+
+readr::write_excel_csv(data, file = "Kplant_0.0.12.csv")
 
 
-# data <- readr::read_csv(file = "Kplant_0.0.7.csv")
+data <- readr::read_csv(file = "Kplant_0.0.12.csv")
 # 
 # names(data)
 # data |> 
@@ -399,4 +463,19 @@ readr::write_csv(data, file = "Kplant_0.0.9.csv")
 #   arrange(diff) |> print(n=60)
 
 
-table(data$Ks)
+table(data$pl_growth_form)
+
+
+
+
+
+foo <- readr::read_csv("kplant_papers_included_publication_year.csv")
+df_foo <- data |> left_join(foo)
+
+ggplot(df_foo |> group_by(Year, IDref) |>  summarise(Year = unique(Year)), aes(x = Year)) +
+  geom_bar(fill = "steelblue") +
+  labs(
+    x = "Year",
+    y = "Number of Publications"
+  ) +
+  theme_minimal()
