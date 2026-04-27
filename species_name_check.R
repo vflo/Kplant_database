@@ -52,5 +52,5 @@ species_taxonomy <- map(taxonomy_list, ~{
 not_resolved <- setdiff(unique_species, species_taxonomy$pl_species_original)
 
 
-write.csv(species_taxonomy,"species_names_clean.csv")
-write.csv(not_resolved,"not_resolved_species_names.csv")
+write.csv(species_taxonomy,"data_sp/species_names_clean.csv")
+write.csv(not_resolved,"data_sp/not_resolved_species_names.csv")

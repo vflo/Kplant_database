@@ -9,9 +9,9 @@
 #' Contact: v.flo@creaf.uab.cat
 #' 
 #' Date created: 15/12/2025
-#' Last modified: 22/01/2026
+#' Last modified: 27/04/2026
 #' 
-#' Version: 0.0.10
+#' Version: 0.1.0
 #' 
 #' License: MIT
 #' 
@@ -21,7 +21,7 @@
 #'     species_names_clean.csv)
 #'   - Input: Excel files with "data" sheets located in data/ folder
 #' 
-#' Output: Kplant_0.1.4.csv
+#' Output: Kplant_0.1.5.csv
 #' 
 #' Usage:
 #'   1. Ensure data/ folder contains source Excel files
@@ -40,14 +40,14 @@ library(tidyr)
 library(stringr)
 
 #### Function to extract "data" sheet from Excel files ####
-extract_data_sheets <- function(data_folder = "data") {
+extract_data_sheets <- function(data_folder = "data_raw") {
   
   # Check if the DATA folder exists
   if (!dir.exists(data_folder)) {
     stop(paste("Folder", data_folder, "does not exist!"))
   }
   
-  # Find all Excel files (.xlsx and .xls) recursively in DATA folder and subfolders
+  # Find all Excel files (.xlsx and .xls) recursively in data_raw folder and subfolders
   excel_files <- list.files(
     path = data_folder,
     pattern = "\\.(xlsx|xls)$",
@@ -153,7 +153,7 @@ standardize_column_types <- function(data_list) {
 }
 
 # Function to combine all data sheets into one data frame
-combine_data_sheets <- function(data_folder = "DATA") {
+combine_data_sheets <- function(data_folder = "data_raw") {
   data_list <- extract_data_sheets(data_folder)
   
   if (is.null(data_list) || length(data_list) == 0) {
@@ -200,7 +200,7 @@ combine_data_sheets <- function(data_folder = "DATA") {
 
 
 #### Extract and combine into one data frame ####
-combined_data <- combine_data_sheets("data")
+combined_data <- combine_data_sheets("data_raw")
 
 
 
@@ -217,7 +217,7 @@ data <- combined_data |>
                                          TRUE~pl_species_original))
 
 #First run species_names_check.R script
-sp_names <- readr::read_csv("species_names_clean.csv")
+sp_names <- readr::read_csv("data_sp/species_names_clean.csv")
 
 data <- data |> 
   left_join(sp_names |> select(-1), by = join_by(pl_species_original)) |>
@@ -394,7 +394,7 @@ data <- data |>
                                     pl_growth_form == "F"~"forb",
                                     pl_growth_form == "G"~"graminoid",
                                     pl_growth_form == "L"~"liana",
-                                    pl_growth_form == "S"~"shrubs",
+                                    pl_growth_form == "S"~"shrub",
                                     pl_growth_form == "C"~"stem_succulent",
                                     pl_growth_form == "FE"~"fern",
                                     TRUE ~ pl_growth_form))
@@ -457,4 +457,4 @@ data <- data.frame(lapply(data, function(x) {
 }))
 
 #### Write database ####
-readr::write_delim(data, file = "Kplant_0.1.5.csv",delim = "\t")
+readr::write_delim(data, file = "database_versions/Kplant_0.1.5.csv",delim = "\t")

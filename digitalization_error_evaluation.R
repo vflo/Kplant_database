@@ -1,9 +1,8 @@
 library(ggplot2)
 library(scales)
 
-# ==============================================================================
-# 1Generate synthetic plots
-# ==============================================================================
+#### 1 Generate synthetic plots ####
+#
 # 
 # set.seed(42)
 # out_dir <- "plots/synthetic_plots"
@@ -69,14 +68,14 @@ library(scales)
 # }
 # # 
 # true_df <- do.call(rbind, true_values)
-# write.csv(true_df, "digitalization_error_true_values.csv", row.names = FALSE)
+# write.csv(true_df, "data_github/digitalization_error_true_values.csv", row.names = FALSE)
 
-# ==============================================================================
-# 2 Analysis
-# ==============================================================================
+
+#### 2 Analysis ####
+
 library(lme4)
 library(readr)
-df <- read_delim("digitalization_error_true_values_observed_values.csv", 
+df <- read_delim("data_github/digitalization_error_true_values_observed_values.csv", 
                  delim = "\t", escape_double = FALSE, trim_ws = TRUE)
 
 df$diff <- df$measure - df$true_y
@@ -101,7 +100,6 @@ y_range <- max(df$true_y) - min(df$true_y)
 bias_pct <- bias / y_range * 100
 sigma_total_pct <- sigma_total / y_range * 100
 
-cat("=== Results for manuscript ===\n")
 cat("Mean bias (intercept):", formatC(bias, format = "e", digits = 3), "\n")
 cat("95% CI:", formatC(ci[1], format = "e", digits = 3), "to",
     formatC(ci[2], format = "e", digits = 3), "\n")
