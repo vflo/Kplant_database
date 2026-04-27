@@ -21,7 +21,7 @@
 #'     species_names_clean.csv)
 #'   - Input: Excel files with "data" sheets located in data/ folder
 #' 
-#' Output: Kplant_0.0.11.csv
+#' Output: Kplant_0.1.4.csv
 #' 
 #' Usage:
 #'   1. Ensure data/ folder contains source Excel files
@@ -243,6 +243,7 @@ pubescens" ~ "Phyllostachys edulis",
       pl_species_original == "Populus deltoides x nigra" & is.na(pl_species_corrected) ~ "Populus deltoides x nigra",
       pl_species_original == "Ribes uva-crispa" & is.na(pl_species_corrected) ~ "Ribes uva-crispa",
       pl_species_original == "Pinus nigra" & is.na(pl_species_corrected) ~ "Pinus nigra",
+      pl_species_original == "Licania membranacea" ~ "Licania membranacea",
       TRUE ~ pl_species_corrected
     ),
     gbif_id = case_when(
@@ -258,6 +259,7 @@ pubescens" ~ "Phyllostachys edulis",
       pl_species_original == "Citrus sinensis" ~ 8077391,
       pl_species_original == "Ribes uva-crispa" ~ 2986185,
       pl_species_original == "Pinus nigra" ~ 5284809,
+      pl_species_original == "Licania membranacea" ~ NA_real_,
       pl_species_original == "Sclerolobium paniculatum var.
 Subvelutinum" ~ 3932173,
       pl_species_original == "Phyllostachys
@@ -278,6 +280,7 @@ pubescens" ~ 5290168,
       pl_species_original == "Citrus sinensis" ~ "Rutaceae",
       pl_species_original == "Ribes uva-crispa" ~ "Grossulariaceae",
       pl_species_original == "Pinus nigra" ~ "Pinaceae",
+      pl_species_original == "Licania membranacea" ~ "Chrysobalanaceae",
       pl_species_original == "Sclerolobium paniculatum var.
 Subvelutinum" ~ "Fabaceae",
       pl_species_original == "Phyllostachys
@@ -392,7 +395,9 @@ data <- data |>
                                     pl_growth_form == "G"~"graminoid",
                                     pl_growth_form == "L"~"liana",
                                     pl_growth_form == "S"~"shrubs",
-                                    pl_growth_form == "C"~"stem_succulent",))
+                                    pl_growth_form == "C"~"stem_succulent",
+                                    pl_growth_form == "FE"~"fern",
+                                    TRUE ~ pl_growth_form))
   
 
 
@@ -446,15 +451,19 @@ data <- data |>
              k_plant_leaf, k_plant_sapwood, k_plant, k_plant_wood, k_plant_ground), \(x) signif(x, 4))
   )
 
-
+data <- data.frame(lapply(data, function(x) {
+  if (is.character(x)) gsub("[\r\n]+", " ", x)
+  else x
+}))
 
 #### Write database ####
 # readr::write_csv(data, file = "Kplant_0.0.10.csv")
 
-readr::write_excel_csv(data, file = "Kplant_0.0.12.csv")
+readr::write_delim(data, file = "Kplant_0.1.5.csv",delim = "\t")
 
+data |> filter(is.na(pl_species_corrected))
 
-data <- readr::read_csv(file = "Kplant_0.0.12.csv")
+data <- readr::read_csv(file = "Kplant_0.1.1.csv")
 # 
 # names(data)
 # data |> 
@@ -462,6 +471,13 @@ data <- readr::read_csv(file = "Kplant_0.0.12.csv")
 #   mutate(diff = pl_basal_area - pl_SA) |> 
 #   arrange(diff) |> print(n=60)
 
+# data |> 
+#   filter(!is.na(pl_age_mean),!is.na(k_plant_leaf)) |> 
+#   group_by(pl_species_corrected, IDref) |> 
+#   summarise(kl = max(k_plant_leaf),
+#             age = mean(pl_age_mean,na.rm = TRUE)) |> 
+#   ggplot(aes(log(age),log(kl)))+geom_point()+geom_smooth(method="lm")
+# 
 
 table(data$pl_growth_form)
 
