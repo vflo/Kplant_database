@@ -457,41 +457,4 @@ data <- data.frame(lapply(data, function(x) {
 }))
 
 #### Write database ####
-# readr::write_csv(data, file = "Kplant_0.0.10.csv")
-
 readr::write_delim(data, file = "Kplant_0.1.5.csv",delim = "\t")
-
-data |> filter(is.na(pl_species_corrected))
-
-data <- readr::read_csv(file = "Kplant_0.1.1.csv")
-# 
-# names(data)
-# data |> 
-#   select(pl_SA, pl_basal_area,file_path, IDref,pl_species_corrected,Contributor,PaperDOI) |>
-#   mutate(diff = pl_basal_area - pl_SA) |> 
-#   arrange(diff) |> print(n=60)
-
-# data |> 
-#   filter(!is.na(pl_age_mean),!is.na(k_plant_leaf)) |> 
-#   group_by(pl_species_corrected, IDref) |> 
-#   summarise(kl = max(k_plant_leaf),
-#             age = mean(pl_age_mean,na.rm = TRUE)) |> 
-#   ggplot(aes(log(age),log(kl)))+geom_point()+geom_smooth(method="lm")
-# 
-
-table(data$pl_growth_form)
-
-
-
-
-
-foo <- readr::read_csv("kplant_papers_included_publication_year.csv")
-df_foo <- data |> left_join(foo)
-
-ggplot(df_foo |> group_by(Year, IDref) |>  summarise(Year = unique(Year)), aes(x = Year)) +
-  geom_bar(fill = "steelblue") +
-  labs(
-    x = "Year",
-    y = "Number of Publications"
-  ) +
-  theme_minimal()
