@@ -307,7 +307,7 @@ data <- data |>
          pl_SA_mean = pl_SA,
          pl_huber_value_mean = pl_huber_value,
          st_LAI = pl_LAI,
-         normalization_level = Level,
+         normalisation_level = Level,
          k_original = Kwp,
          k_original_standard_error = Standard_error_Kwp,
          k_original_units = Kwp_original_units,
@@ -428,7 +428,27 @@ data <- data |>
 
 names(data)
 
-
+#### Correct/include DOI numbers ####
+data <- data |>
+  mutate(
+    Sources = case_when(
+      IDref == 828 ~ "10.17660/ActaHortic.2020.1300.20",
+      IDref == 186 ~ "10.1093/treephys/24.10.1119",
+      IDref == 811 ~ "10.1890/0012-9658(1999)080[2373:DIDABS]2.0.CO;2",
+      IDref == 1442 ~ "10.1016/j.foreco.2008.02.014",
+      IDref == 1870 ~ "Zhu, C., Chen, Y., Li, W., Ma, J., & Fu, A. (2011). EFFECTS OF GROUNDWATER DECLINE ON POPULUS EUPHRATICA AT HYPER-ARID REGIONS: THE LOWER REACHES OF THE TARIM RIVER IN XINJIANG, CHINA. FRESENIUS ENVIRONMENTAL BULLETIN, 20(12a), 3326-3337.", #No DOI available
+      IDref == 1877 ~ "ZHUANG, Jie, Gui-Rui YU, Keiichi NAKAYAMA and Tayuki Urushisaki, 2000. Environmental dependence of sap flow of maize. Tech. Bull. Fac. Hort. Chiba Univ, 54, 53-64",
+      IDref == 1308 ~ "10.1111/j.1365-2435.2003.00791.x",
+      IDref == 1881 ~ "10.1109/IGARSS.1994.399087",
+      IDref == 603 ~ "https://doi.org/10.25913/5eaa620d712ee",
+      IDref == 2000 ~ "https://doi.org/10.5194/egusphere-egu25-3591",
+      IDref == 1200 ~"https://doi.org/10.1007/BF00392152",
+      TRUE ~ PaperDOI
+    ),
+    .after = PaperDOI
+  ) |>
+  select(-PaperDOI)
+  
 
 #### Round data ####
 # Variables to round with round()
@@ -457,4 +477,4 @@ data <- data.frame(lapply(data, function(x) {
 }))
 
 #### Write database ####
-readr::write_delim(data, file = "database_versions/Kplant_0.1.5.csv",delim = "\t")
+readr::write_delim(data, file = "database_versions/KPLANT_database_V1.1.csv",delim = "\t")
